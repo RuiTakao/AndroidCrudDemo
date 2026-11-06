@@ -1,4 +1,4 @@
-package com.takaobrog.crudapponlyactivity;
+package com.takaobrog.crudapponlyactivity.util;
 
 import android.util.Log;
 
