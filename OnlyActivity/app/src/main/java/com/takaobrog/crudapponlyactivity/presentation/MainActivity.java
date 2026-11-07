@@ -1,6 +1,9 @@
 package com.takaobrog.crudapponlyactivity.presentation;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 
@@ -13,6 +16,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.takaobrog.crudapponlyactivity.connection.ServerConnection;
 import com.takaobrog.crudapponlyactivity.util.Data;
 import com.takaobrog.crudapponlyactivity.R;
+import com.takaobrog.crudapponlyactivity.util.Logging;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
+        ListView listView = findViewById(R.id.menu_item_list);
         List<Map<String, String>> list = new ArrayList<>();
         ServerConnection conn = new ServerConnection();
         new Thread(() -> {
@@ -51,10 +56,21 @@ public class MainActivity extends AppCompatActivity {
                     new String[]{LIST_TITLE, LIST_MEMO},
                     new int[]{R.id.list_title, R.id.list_menu}
             );
-            ListView listView = findViewById(R.id.menu_item_list);
             listView.post(() -> {
                 listView.setAdapter(adapter);
             });
         }).start();
+
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long l) {
+                Map<String, String> item;
+                item = (Map<String, String>) parent.getItemAtPosition(position);
+                Intent intent = new Intent(MainActivity.this, DetailActivity.class);
+                intent.putExtra(DetailActivity.DATA_TITLE, item.get(LIST_TITLE));
+                intent.putExtra(DetailActivity.DATA_MEMO, item.get(LIST_MEMO));
+                startActivity(intent);
+            }
+        });
     }
 }
