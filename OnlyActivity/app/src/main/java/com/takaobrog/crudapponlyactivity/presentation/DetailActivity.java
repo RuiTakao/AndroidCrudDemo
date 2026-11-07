@@ -1,6 +1,5 @@
 package com.takaobrog.crudapponlyactivity.presentation;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
@@ -12,11 +11,12 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.takaobrog.crudapponlyactivity.R;
+import com.takaobrog.crudapponlyactivity.connection.ServerConnection;
+import com.takaobrog.crudapponlyactivity.util.Data;
 
 public class DetailActivity extends AppCompatActivity {
 
-    public static final String DATA_TITLE = "title";
-    public static final String DATA_MEMO = "memo";
+    public static final String DATA_ID = "id";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,8 +31,17 @@ public class DetailActivity extends AppCompatActivity {
 
         TextView title = findViewById(R.id.detail_title);
         TextView memo = findViewById(R.id.detail_memo);
-        title.setText(getIntent().getStringExtra(DATA_TITLE));
-        memo.setText(getIntent().getStringExtra(DATA_MEMO));
+        int id = getIntent().getIntExtra(DATA_ID, 0);
+        ServerConnection conn = new ServerConnection();
+        new Thread(() -> {
+            Data data = conn.getData(id);
+            title.post(() -> {
+                title.setText(data.getTitle());
+            });
+            memo.post(() -> {
+                memo.setText(data.getMemo());
+            });
+        }).start();
     }
 
     public void onClickBack(View view) {

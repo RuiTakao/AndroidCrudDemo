@@ -21,10 +21,20 @@ TODOS = [
 
 class TodoHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        if urlsplit(self.path).path in ("/todo/getTodoList", "/todo/getTodoList/"):
+        path = urlsplit(self.path).path
+        if path in ("/todo/getTodoList", "/todo/getTodoList/"):
             self.send_json(200, TODOS)
-        else:
-            self.send_json(404, {"error": "Not found"})
+            return
+
+        prefix = "/todo/getTodo/"
+        if path.startswith(prefix):
+            todo_id = path[len(prefix):].removesuffix("/")
+            for todo in TODOS:
+                if str(todo["id"]) == todo_id:
+                    self.send_json(200, todo)
+                    return
+
+        self.send_json(404, {"error": "Not found"})
 
     def send_json(self, status, data):
         body = json.dumps(data, ensure_ascii=False).encode("utf-8")

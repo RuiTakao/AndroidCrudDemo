@@ -16,7 +16,6 @@ import androidx.core.view.WindowInsetsCompat;
 import com.takaobrog.crudapponlyactivity.connection.ServerConnection;
 import com.takaobrog.crudapponlyactivity.util.Data;
 import com.takaobrog.crudapponlyactivity.R;
-import com.takaobrog.crudapponlyactivity.util.Logging;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,6 +24,7 @@ import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final String LIST_ID = "id";
     private static final String LIST_TITLE = "title";
     private static final String LIST_MEMO = "memo";
 
@@ -40,11 +40,12 @@ public class MainActivity extends AppCompatActivity {
         });
 
         ListView listView = findViewById(R.id.menu_item_list);
-        List<Map<String, String>> list = new ArrayList<>();
+        List<Map<String, Object>> list = new ArrayList<>();
         ServerConnection conn = new ServerConnection();
         new Thread(() -> {
             for (Data data : conn.getData()) {
-                Map<String, String> item = new HashMap<>();
+                Map<String, Object> item = new HashMap<>();
+                item.put(LIST_ID, data.getId());
                 item.put(LIST_TITLE, data.getTitle());
                 item.put(LIST_MEMO, data.getMemo());
                 list.add(item);
@@ -64,11 +65,10 @@ public class MainActivity extends AppCompatActivity {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long l) {
-                Map<String, String> item;
-                item = (Map<String, String>) parent.getItemAtPosition(position);
+                Map<String, Integer> item;
+                item = (Map<String, Integer>) parent.getItemAtPosition(position);
                 Intent intent = new Intent(MainActivity.this, DetailActivity.class);
-                intent.putExtra(DetailActivity.DATA_TITLE, item.get(LIST_TITLE));
-                intent.putExtra(DetailActivity.DATA_MEMO, item.get(LIST_MEMO));
+                intent.putExtra(DetailActivity.DATA_ID, item.get(LIST_ID));
                 startActivity(intent);
             }
         });

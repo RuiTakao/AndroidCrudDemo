@@ -14,9 +14,9 @@ public class ServerConnection {
 
     private static final String METHOD_GET = "GET";
     private static final int TIMEOUT = 0;
+    private final Gson gson = new Gson();
 
     public Data[] getData() {
-        Gson gson = new Gson();
         StringBuilder builder = new StringBuilder();
         Data[] data = new Data[0];
         try {
@@ -38,6 +38,28 @@ public class ServerConnection {
             }
             connection.disconnect();
         } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return data;
+    }
+
+    public Data getData(int id) {
+        Data data;
+        try {
+            URL url = new URL(BuildConfig.BASE_URL + "todo/getTodo/" + id);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setConnectTimeout(TIMEOUT);
+            connection.setReadTimeout(TIMEOUT);
+            connection.setRequestMethod(METHOD_GET);
+            connection.setUseCaches(false);
+            connection.setDoOutput(false);
+            connection.setDoInput(true);
+            connection.connect();
+            BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            String line = br.readLine();
+            data = gson.fromJson(line, Data.class);
+            connection.disconnect();
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
         return data;

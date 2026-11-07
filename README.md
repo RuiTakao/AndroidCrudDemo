@@ -3,3 +3,6 @@
 
 - OnlyActivity
   Fragment、ComposeなどのUIフレームワークを使用せずにアプリを構築しています。
+
+- DemoServer
+  AndroidとAPI通信を行うためのモックサーバーです。

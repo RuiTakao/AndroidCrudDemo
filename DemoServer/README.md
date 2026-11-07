@@ -29,6 +29,19 @@ curl http://localhost:8080/todo/getTodoList
 上記は先頭2件の抜粋です。レスポンスは `200 OK`、Content-Typeは
 `application/json; charset=utf-8` です。存在しないパスは `404` を返します。
 
+### ID指定で1件取得
+
+```sh
+curl http://localhost:8080/todo/getTodo/1
+```
+
+`GET /todo/getTodo/{id}` は、指定したIDのJSONオブジェクトを返します。
+末尾に `/` がある場合も対応します。存在しないIDは `404` を返します。
+
+```json
+{"id": 1, "title": "買い物", "memo": "牛乳と卵を買う"}
+```
+
 Android標準エミュレーターからホストPCへアクセスする場合のURL:
 
 ```text
