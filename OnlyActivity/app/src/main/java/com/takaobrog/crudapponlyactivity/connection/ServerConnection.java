@@ -20,7 +20,7 @@ public class ServerConnection {
         StringBuilder builder = new StringBuilder();
         Data[] data = new Data[0];
         try {
-            URL url = new URL(BuildConfig.BASE_URL + "todos/todo_list/");
+            URL url = new URL(BuildConfig.BASE_URL + "todo/getTodoList/");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setConnectTimeout(TIMEOUT);
             connection.setReadTimeout(TIMEOUT);
