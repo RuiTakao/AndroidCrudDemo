@@ -5,6 +5,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -17,6 +18,10 @@ import com.takaobrog.crudapponlyactivity.util.Data;
 public class DetailActivity extends AppCompatActivity {
 
     public static final String DATA_ID = "id";
+    private TextView title;
+    private TextView memo;
+    private int id;
+    private AlertDialog dialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,9 +34,20 @@ public class DetailActivity extends AppCompatActivity {
             return insets;
         });
 
-        TextView title = findViewById(R.id.detail_title);
-        TextView memo = findViewById(R.id.detail_memo);
-        int id = getIntent().getIntExtra(DATA_ID, 0);
+        id = getIntent().getIntExtra(DATA_ID, 0);
+        title = findViewById(R.id.detail_title);
+        memo = findViewById(R.id.detail_memo);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this)
+                .setTitle("確認")
+                .setMessage("お待ちください");
+        dialog = builder.create();
+        dialog.show();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
         ServerConnection conn = new ServerConnection();
         new Thread(() -> {
             Data data = conn.getData(id);
@@ -41,6 +57,7 @@ public class DetailActivity extends AppCompatActivity {
             memo.post(() -> {
                 memo.setText(data.getMemo());
             });
+            dialog.dismiss();
         }).start();
     }
 

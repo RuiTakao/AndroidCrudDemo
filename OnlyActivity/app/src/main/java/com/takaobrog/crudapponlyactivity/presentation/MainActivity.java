@@ -8,6 +8,7 @@ import android.widget.ListView;
 import android.widget.SimpleAdapter;
 
 import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -27,6 +28,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String LIST_ID = "id";
     private static final String LIST_TITLE = "title";
     private static final String LIST_MEMO = "memo";
+    private ListView listView;
+    private AlertDialog dialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,7 +42,28 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        ListView listView = findViewById(R.id.menu_item_list);
+        listView = findViewById(R.id.menu_item_list);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long l) {
+                Map<String, Integer> item;
+                item = (Map<String, Integer>) parent.getItemAtPosition(position);
+                Intent intent = new Intent(MainActivity.this, DetailActivity.class);
+                intent.putExtra(DetailActivity.DATA_ID, item.get(LIST_ID));
+                startActivity(intent);
+            }
+        });
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this)
+                .setTitle("確認")
+                .setMessage("お待ちください");
+        dialog = builder.create();
+        dialog.show();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
         List<Map<String, Object>> list = new ArrayList<>();
         ServerConnection conn = new ServerConnection();
         new Thread(() -> {
@@ -60,17 +84,7 @@ public class MainActivity extends AppCompatActivity {
             listView.post(() -> {
                 listView.setAdapter(adapter);
             });
+            dialog.dismiss();
         }).start();
-
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long l) {
-                Map<String, Integer> item;
-                item = (Map<String, Integer>) parent.getItemAtPosition(position);
-                Intent intent = new Intent(MainActivity.this, DetailActivity.class);
-                intent.putExtra(DetailActivity.DATA_ID, item.get(LIST_ID));
-                startActivity(intent);
-            }
-        });
     }
 }
