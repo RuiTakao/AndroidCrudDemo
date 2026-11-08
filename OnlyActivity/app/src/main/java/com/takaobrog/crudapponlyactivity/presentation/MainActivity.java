@@ -20,6 +20,7 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.takaobrog.crudapponlyactivity.connection.ServerConnection;
 import com.takaobrog.crudapponlyactivity.util.Data;
 import com.takaobrog.crudapponlyactivity.R;
+import com.takaobrog.crudapponlyactivity.util.Logging;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,6 +29,7 @@ import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final String TAG = MainActivity.class.getSimpleName();
     private static final String LIST_ID = "id";
     private static final String LIST_TITLE = "title";
     private static final String LIST_MEMO = "memo";
@@ -38,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Logging.d(TAG, "onCreate");
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
@@ -57,13 +60,26 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
-        showLoadingDialog();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        Logging.d(TAG, "onResume");
+        showLoadingDialog();
         fetchList(this::dismissLoadingDialog);
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        Logging.d(TAG, "onRestart");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Logging.d(TAG, "onDestroy");
     }
 
     public void onClickFb(View view) {
@@ -101,6 +117,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void fetchList(Runnable callback) {
+        Logging.d(TAG, "fetchList");
         List<Map<String, Object>> list = new ArrayList<>();
         new Thread(() -> {
             for (Data data : conn.getData()) {
@@ -119,6 +136,7 @@ public class MainActivity extends AppCompatActivity {
             );
             listView.post(() -> listView.setAdapter(adapter));
             if (callback != null) callback.run();
+            Logging.d(TAG, "fetchList setList");
         }).start();
     }
 
