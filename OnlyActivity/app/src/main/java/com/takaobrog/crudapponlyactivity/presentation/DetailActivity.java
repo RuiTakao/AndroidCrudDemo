@@ -78,9 +78,12 @@ public class DetailActivity extends AppCompatActivity {
 
     public void onClickDelete(View view) {
         Logging.d(TAG, "delete id: " + id);
+        showLoadingDialog();
         buttonSetting();
-        finish();
-        new Thread(() -> conn.delete(id)).start();
+        new Thread(() -> {
+            conn.delete(id);
+            finish();
+        }).start();
     }
 
     private void showLoadingDialog() {
