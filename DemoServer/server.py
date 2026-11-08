@@ -1,40 +1,100 @@
-"""静的なTodoデータを返すデモ用HTTPサーバー。"""
+"""MySQLにTodoを保存するデモ用HTTPサーバー。"""
 
 import json
+import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 
+import pymysql
 
-TODOS = [
-    {"id": 1, "title": "買い物", "memo": "牛乳と卵を買う"},
-    {"id": 2, "title": "掃除", "memo": "リビングを掃除する"},
-    {"id": 3, "title": "洗濯", "memo": "タオルを洗う"},
-    {"id": 4, "title": "読書", "memo": "本を30ページ読む"},
-    {"id": 5, "title": "運動", "memo": "公園を30分散歩する"},
-    {"id": 6, "title": "勉強", "memo": "Pythonの基礎を復習する"},
-    {"id": 7, "title": "料理", "memo": "夕食にカレーを作る"},
-    {"id": 8, "title": "メール確認", "memo": "届いたメールを確認する"},
-    {"id": 9, "title": "予定確認", "memo": "明日の予定を確認する"},
-    {"id": 10, "title": "日記", "memo": "今日の出来事を書く"},
-]
+
+def connect_db():
+    return pymysql.connect(
+        host=os.environ["DB_HOST"],
+        user=os.environ["DB_USER"],
+        password=os.environ["DB_PASSWORD"],
+        database=os.environ["DB_NAME"],
+        charset="utf8mb4",
+        cursorclass=pymysql.cursors.DictCursor,
+        connect_timeout=5,
+        read_timeout=10,
+        write_timeout=10,
+    )
 
 
 class TodoHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = urlsplit(self.path).path
+        sql = None
+        params = ()
         if path in ("/todo/getTodoList", "/todo/getTodoList/"):
-            self.send_json(200, TODOS)
+            sql = "SELECT id, title, memo FROM todos ORDER BY id"
+        elif path.startswith("/todo/getTodo/"):
+            todo_id = path[len("/todo/getTodo/"):].removesuffix("/")
+            if todo_id.isascii() and todo_id.isdecimal() and len(todo_id) <= 10:
+                sql = "SELECT id, title, memo FROM todos WHERE id = %s"
+                params = (int(todo_id),)
+        if sql is None:
+            self.send_json(404, {"error": "Not found"})
             return
+        try:
+            with connect_db() as db:
+                with db.cursor() as cursor:
+                    cursor.execute(sql, params)
+                    data = cursor.fetchone() if params else cursor.fetchall()
+        except pymysql.MySQLError:
+            self.send_json(503, {"error": "Database unavailable"})
+            return
+        if data is None:
+            self.send_json(404, {"error": "Not found"})
+        else:
+            self.send_json(200, data)
 
-        prefix = "/todo/getTodo/"
-        if path.startswith(prefix):
-            todo_id = path[len(prefix):].removesuffix("/")
-            for todo in TODOS:
-                if str(todo["id"]) == todo_id:
-                    self.send_json(200, todo)
-                    return
-
-        self.send_json(404, {"error": "Not found"})
+    def do_POST(self):
+        if urlsplit(self.path).path not in ("/todo/create", "/todo/create/"):
+            self.send_json(404, {"error": "Not found"})
+            return
+        if self.headers.get_content_type() != "application/json":
+            self.send_json(415, {"error": "Content-Type must be application/json"})
+            return
+        if self.headers.get("Transfer-Encoding"):
+            self.send_json(400, {"error": "Use Content-Length instead of Transfer-Encoding"})
+            return
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+            if not 0 < length <= 100000:
+                raise ValueError
+            raw = self.rfile.read(length)
+            data = json.loads(raw.decode("utf-8"))
+        except (ValueError, UnicodeDecodeError):
+            self.send_json(400, {"error": "Invalid JSON body or Content-Length"})
+            return
+        if not isinstance(data, dict):
+            self.send_json(400, {"error": "JSON body must be an object"})
+            return
+        title, memo = data.get("title"), data.get("memo")
+        if not isinstance(title, str) or not title.strip() or len(title) > 255:
+            self.send_json(400, {"error": "title must be a non-empty string of at most 255 characters"})
+            return
+        if not isinstance(memo, str) or len(memo.encode("utf-8", errors="replace")) > 65535:
+            self.send_json(400, {"error": "memo must be a string of at most 65535 UTF-8 bytes"})
+            return
+        try:
+            title.encode("utf-8")
+            memo.encode("utf-8")
+        except UnicodeEncodeError:
+            self.send_json(400, {"error": "Invalid Unicode text"})
+            return
+        try:
+            with connect_db() as db:
+                with db.cursor() as cursor:
+                    cursor.execute("INSERT INTO todos (title, memo) VALUES (%s, %s)", (title, memo))
+                    todo_id = cursor.lastrowid
+                db.commit()
+        except pymysql.MySQLError:
+            self.send_json(503, {"error": "Database unavailable"})
+            return
+        self.send_json(201, {"id": todo_id, "title": title, "memo": memo})
 
     def send_json(self, status, data):
         body = json.dumps(data, ensure_ascii=False).encode("utf-8")
