@@ -1,4 +1,9 @@
 <resources>
     <string name="app_name">CrudAppOnlyActivity</string>
     <string name="back_btn">戻る</string>
+    <string name="register_title">タイトル</string>
+    <string name="register_memo">メモ</string>
+    <string name="dialog_title">登録</string>
+    <string name="dialog_button_positive">OK</string>
+    <string name="dialog_button_negative">キャンセル</string>
 </resources>

@@ -3,16 +3,26 @@ package com.takaobrog.crudapponlyactivity.connection;
 import com.google.gson.Gson;
 import com.takaobrog.crudapponlyactivity.BuildConfig;
 import com.takaobrog.crudapponlyactivity.util.Data;
+import com.takaobrog.crudapponlyactivity.util.Logging;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
 public class ServerConnection {
 
     private static final String METHOD_GET = "GET";
+    private static final String METHOD_POST = "POST";
+    private static final String HEADER_KEY = "Content-Type";
+    private static final String HEADER_VALUE = "application/json; charset=utf-8";
+    private static final String CHARSET = "UTF-8";
     private static final int TIMEOUT = 0;
     private final Gson gson = new Gson();
 
@@ -63,5 +73,40 @@ public class ServerConnection {
             throw new RuntimeException(e);
         }
         return data;
+    }
+
+    public void create(String title, String memo) {
+        String body;
+        try {
+            JSONObject json = new JSONObject();
+            json.put("title", title);
+            json.put("memo", memo);
+            body = json.toString();
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+
+        try {
+            URL url = new URL(BuildConfig.BASE_URL + "todo/create/");
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod(METHOD_POST);
+            connection.setDoInput(true);
+            connection.setDoOutput(true);
+            connection.setRequestProperty(HEADER_KEY, HEADER_VALUE);
+            connection.connect();
+            BufferedWriter writer = new BufferedWriter(
+                    new OutputStreamWriter(connection.getOutputStream(), CHARSET)
+            );
+            writer.write(body);
+            writer.close();
+            int responseCode = connection.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                Logging.d("DEBUG", "HTTP_OK");
+            } else {
+                Logging.d("DEBUG", "responseCode " + responseCode);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
