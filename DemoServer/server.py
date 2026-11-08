@@ -54,23 +54,8 @@ class TodoHandler(BaseHTTPRequestHandler):
         if urlsplit(self.path).path not in ("/todo/create", "/todo/create/"):
             self.send_json(404, {"error": "Not found"})
             return
-        if self.headers.get_content_type() != "application/json":
-            self.send_json(415, {"error": "Content-Type must be application/json"})
-            return
-        if self.headers.get("Transfer-Encoding"):
-            self.send_json(400, {"error": "Use Content-Length instead of Transfer-Encoding"})
-            return
-        try:
-            length = int(self.headers.get("Content-Length", "0"))
-            if not 0 < length <= 100000:
-                raise ValueError
-            raw = self.rfile.read(length)
-            data = json.loads(raw.decode("utf-8"))
-        except (ValueError, UnicodeDecodeError):
-            self.send_json(400, {"error": "Invalid JSON body or Content-Length"})
-            return
-        if not isinstance(data, dict):
-            self.send_json(400, {"error": "JSON body must be an object"})
+        data = self.read_json_object()
+        if data is None:
             return
         title, memo = data.get("title"), data.get("memo")
         if not isinstance(title, str) or not title.strip() or len(title) > 255:
@@ -95,6 +80,52 @@ class TodoHandler(BaseHTTPRequestHandler):
             self.send_json(503, {"error": "Database unavailable"})
             return
         self.send_json(201, {"id": todo_id, "title": title, "memo": memo})
+
+    def do_DELETE(self):
+        if urlsplit(self.path).path not in ("/todo/delete", "/todo/delete/"):
+            self.send_json(404, {"error": "Not found"})
+            return
+        data = self.read_json_object()
+        if data is None:
+            return
+        todo_id = data.get("id")
+        if type(todo_id) is not int or not 1 <= todo_id <= 2147483647:
+            self.send_json(400, {"error": "id must be an integer between 1 and 2147483647"})
+            return
+        try:
+            with connect_db() as db:
+                with db.cursor() as cursor:
+                    cursor.execute("DELETE FROM todos WHERE id = %s", (todo_id,))
+                    deleted = cursor.rowcount
+                db.commit()
+        except pymysql.MySQLError:
+            self.send_json(503, {"error": "Database unavailable"})
+            return
+        if deleted == 0:
+            self.send_json(404, {"error": "Not found"})
+        else:
+            self.send_json(200, {"id": todo_id, "deleted": True})
+
+    def read_json_object(self):
+        if self.headers.get_content_type() != "application/json":
+            self.send_json(415, {"error": "Content-Type must be application/json"})
+            return
+        if self.headers.get("Transfer-Encoding"):
+            self.send_json(400, {"error": "Use Content-Length instead of Transfer-Encoding"})
+            return
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+            if not 0 < length <= 100000:
+                raise ValueError
+            raw = self.rfile.read(length)
+            data = json.loads(raw.decode("utf-8"))
+        except (ValueError, UnicodeDecodeError):
+            self.send_json(400, {"error": "Invalid JSON body or Content-Length"})
+            return
+        if not isinstance(data, dict):
+            self.send_json(400, {"error": "JSON body must be an object"})
+            return
+        return data
 
     def send_json(self, status, data):
         body = json.dumps(data, ensure_ascii=False).encode("utf-8")

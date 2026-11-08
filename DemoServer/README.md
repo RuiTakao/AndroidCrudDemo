@@ -49,6 +49,20 @@ curl -X POST http://localhost:8000/todo/create \
 不正な入力は `400`、JSON以外のContent-Typeは `415`、DB接続エラーは `503` を返します。
 登録したデータは一覧・ID指定取得の両方に反映されます。
 
+### 削除
+
+```sh
+curl -X DELETE http://localhost:8000/todo/delete \
+  -H 'Content-Type: application/json' \
+  -d '{"id":1}'
+```
+
+`DELETE /todo/delete` はJSON本文の `id` で指定した1件をMySQLから削除します。
+末尾の `/` にも対応します。`id` は1〜2147483647の整数が必須です。
+成功時は `200 OK` と `{"id":1,"deleted":true}` を返します。
+存在しないIDは `404`、不正な入力は `400`、JSON以外のContent-Typeは `415`、
+DB接続エラーは `503` です。削除結果は一覧・ID指定取得にも反映されます。
+
 ### ID指定で1件取得
 
 ```sh
