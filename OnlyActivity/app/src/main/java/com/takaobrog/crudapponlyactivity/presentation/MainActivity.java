@@ -10,6 +10,8 @@ import android.widget.ListView;
 import android.widget.SimpleAdapter;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -29,13 +31,17 @@ import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
+    public static final String TRANSITION_TYPE = "TRANSITION_TYPE";
+    public static final String TRANSITION_TYPE_DELETE = "DELETE";
+    public static final String TRANSITION_TYPE_BACK = "BACK";
+    public static final String LIST_ID = "id";
     private static final String TAG = MainActivity.class.getSimpleName();
-    private static final String LIST_ID = "id";
     private static final String LIST_TITLE = "title";
     private static final String LIST_MEMO = "memo";
     private final ServerConnection conn = new ServerConnection();
     private ListView listView;
     private AlertDialog dialog;
+    private ActivityResultLauncher<Intent> launcher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +55,23 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
+        launcher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() != RESULT_OK) return;
+                    showLoadingDialog();
+                    Intent data = result.getData();
+                    new Thread(() -> {
+                        if (data != null &&
+                                data.getStringExtra(TRANSITION_TYPE).equals(TRANSITION_TYPE_DELETE)) {
+                            conn.delete(data.getIntExtra(LIST_ID, 0));
+                        }
+                        fetchList(this::dismissLoadingDialog);
+                    }).start();
+                }
+
+        );
+
         listView = findViewById(R.id.menu_item_list);
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -57,17 +80,18 @@ public class MainActivity extends AppCompatActivity {
                 item = (Map<String, Integer>) parent.getItemAtPosition(position);
                 Intent intent = new Intent(MainActivity.this, DetailActivity.class);
                 intent.putExtra(DetailActivity.DATA_ID, item.get(LIST_ID));
-                startActivity(intent);
+                launcher.launch(intent);
             }
         });
+
+        showLoadingDialog();
+        fetchList(this::dismissLoadingDialog);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         Logging.d(TAG, "onResume");
-        showLoadingDialog();
-        fetchList(this::dismissLoadingDialog);
     }
 
     @Override

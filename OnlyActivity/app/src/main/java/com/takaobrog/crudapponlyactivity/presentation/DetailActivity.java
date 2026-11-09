@@ -1,5 +1,11 @@
 package com.takaobrog.crudapponlyactivity.presentation;
 
+import static com.takaobrog.crudapponlyactivity.presentation.MainActivity.LIST_ID;
+import static com.takaobrog.crudapponlyactivity.presentation.MainActivity.TRANSITION_TYPE;
+import static com.takaobrog.crudapponlyactivity.presentation.MainActivity.TRANSITION_TYPE_BACK;
+import static com.takaobrog.crudapponlyactivity.presentation.MainActivity.TRANSITION_TYPE_DELETE;
+
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -69,17 +75,20 @@ public class DetailActivity extends AppCompatActivity {
 
     public void onClickBack(View view) {
         buttonSetting();
+        Intent intent = new Intent();
+        intent.putExtra(TRANSITION_TYPE, TRANSITION_TYPE_BACK);
+        setResult(RESULT_OK, intent);
         finish();
     }
 
     public void onClickDelete(View view) {
         Logging.d(TAG, "delete id: " + id);
-        showLoadingDialog();
         buttonSetting();
-        new Thread(() -> {
-            conn.delete(id);
-            finish();
-        }).start();
+        Intent intent = new Intent();
+        intent.putExtra(TRANSITION_TYPE, TRANSITION_TYPE_DELETE);
+        intent.putExtra(LIST_ID, id);
+        setResult(RESULT_OK, intent);
+        finish();
     }
 
     private void showLoadingDialog() {
