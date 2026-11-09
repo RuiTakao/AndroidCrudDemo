@@ -48,12 +48,8 @@ public class DetailActivity extends AppCompatActivity {
         showLoadingDialog();
         new Thread(() -> {
             Data data = conn.getData(id);
-            title.post(() -> {
-                title.setText(data.getTitle());
-            });
-            memo.post(() -> {
-                memo.setText(data.getMemo());
-            });
+            title.post(() -> title.setText(data.getTitle()));
+            memo.post(() -> memo.setText(data.getMemo()));
             dismissLoadingDialog();
         }).start();
     }

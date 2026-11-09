@@ -100,12 +100,7 @@ public class ServerConnection {
             );
             writer.write(body);
             writer.close();
-            int responseCode = connection.getResponseCode();
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                Logging.d("DEBUG", "HTTP_OK");
-            } else {
-                Logging.d("DEBUG", "responseCode " + responseCode);
-            }
+            LoggingToResponse(connection.getResponseCode());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -134,14 +129,17 @@ public class ServerConnection {
             Logging.d("DEBUG", "body: " + body);
             writer.write(body);
             writer.close();
-            int responseCode = connection.getResponseCode();
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                Logging.d("DEBUG", "HTTP_OK");
-            } else {
-                Logging.d("DEBUG", "responseCode " + responseCode);
-            }
+            LoggingToResponse(connection.getResponseCode());
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private void LoggingToResponse(int responseCode) {
+        if (responseCode == HttpURLConnection.HTTP_OK) {
+            Logging.d("DEBUG", "HTTP_OK");
+        } else {
+            Logging.d("DEBUG", "responseCode " + responseCode);
         }
     }
 }
