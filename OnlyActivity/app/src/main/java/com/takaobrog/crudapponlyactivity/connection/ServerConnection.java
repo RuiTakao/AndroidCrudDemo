@@ -18,6 +18,7 @@ import java.net.URL;
 
 public class ServerConnection {
 
+    private static final String TAG = ServerConnection.class.getSimpleName();
     private static final String METHOD_GET = "GET";
     private static final String METHOD_POST = "POST";
     private static final String METHOD_DELETE = "DELETE";
@@ -40,7 +41,6 @@ public class ServerConnection {
             connection.setUseCaches(false);
             connection.setDoOutput(false);
             connection.setDoInput(true);
-
             connection.connect();
             BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             String line;
@@ -87,21 +87,8 @@ public class ServerConnection {
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }
-
         try {
-            URL url = new URL(BuildConfig.BASE_URL + "todo/create/");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod(METHOD_POST);
-            connection.setDoInput(true);
-            connection.setDoOutput(true);
-            connection.setRequestProperty(HEADER_KEY, HEADER_VALUE);
-            connection.connect();
-            BufferedWriter writer = new BufferedWriter(
-                    new OutputStreamWriter(connection.getOutputStream(), CHARSET)
-            );
-            writer.write(body);
-            writer.close();
-            LoggingToResponse(connection.getResponseCode());
+            connection("todo/create/", METHOD_POST, body);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -117,20 +104,7 @@ public class ServerConnection {
             throw new RuntimeException(e);
         }
         try {
-            URL url = new URL(BuildConfig.BASE_URL + "todo/delete/");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod(METHOD_DELETE);
-            connection.setDoInput(true);
-            connection.setDoOutput(true);
-            connection.setRequestProperty(HEADER_KEY, HEADER_VALUE);
-            connection.connect();
-            BufferedWriter writer = new BufferedWriter(
-                    new OutputStreamWriter(connection.getOutputStream(), CHARSET)
-            );
-            Logging.d("DEBUG", "body: " + body);
-            writer.write(body);
-            writer.close();
-            LoggingToResponse(connection.getResponseCode());
+            connection("todo/delete/", METHOD_DELETE, body);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -148,30 +122,37 @@ public class ServerConnection {
             throw new RuntimeException(e);
         }
         try {
-            URL url = new URL(BuildConfig.BASE_URL + "todo/update/");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod(METHOD_PUT);
-            connection.setDoInput(true);
-            connection.setDoOutput(true);
-            connection.setRequestProperty(HEADER_KEY, HEADER_VALUE);
-            connection.connect();
-            BufferedWriter writer = new BufferedWriter(
-                    new OutputStreamWriter(connection.getOutputStream(), CHARSET)
-            );
-            Logging.d("DEBUG", "body: " + body);
-            writer.write(body);
-            writer.close();
-            LoggingToResponse(connection.getResponseCode());
+            connection("todo/update/", METHOD_PUT, body);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void LoggingToResponse(int responseCode) {
+    private void connection(String action, String method, String body) throws IOException {
+        URL url = new URL(BuildConfig.BASE_URL + action);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setConnectTimeout(TIMEOUT);
+        connection.setReadTimeout(TIMEOUT);
+        connection.setRequestMethod(method);
+        connection.setDoInput(true);
+        connection.setDoOutput(true);
+        connection.setRequestProperty(HEADER_KEY, HEADER_VALUE);
+        connection.connect();
+        BufferedWriter writer = new BufferedWriter(
+                new OutputStreamWriter(connection.getOutputStream(), CHARSET)
+        );
+        Logging.d(TAG, "action: " + action + " body: " + body);
+        writer.write(body);
+        writer.close();
+        LoggingToResponse(connection.getResponseCode(), action);
+        connection.disconnect();
+    }
+
+    private void LoggingToResponse(int responseCode, String action) {
         if (responseCode == HttpURLConnection.HTTP_OK) {
-            Logging.d("DEBUG", "HTTP_OK");
+            Logging.d(TAG, "action: " + action + " HTTP_OK");
         } else {
-            Logging.d("DEBUG", "responseCode " + responseCode);
+            Logging.d(TAG, "action: " + action + " responseCode " + responseCode);
         }
     }
 }
