@@ -49,6 +49,21 @@ curl -X POST http://localhost:8000/todo/create \
 不正な入力は `400`、JSON以外のContent-Typeは `415`、DB接続エラーは `503` を返します。
 登録したデータは一覧・ID指定取得の両方に反映されます。
 
+### 更新
+
+```sh
+curl -X PUT http://localhost:8000/todo/update \
+  -H 'Content-Type: application/json' \
+  -d '{"id":1,"title":"更新したタイトル","memo":"更新したメモ"}'
+```
+
+`PUT /todo/update` はJSON本文の `id` をキーに、`title` と `memo` の両方を更新します。
+3項目とも必須です。`id` は1〜2147483647の整数、`title` と `memo` は新規登録と同じ入力条件です。
+末尾の `/` にも対応します。成功時は `200 OK` と更新後のJSONオブジェクトを返します。
+同じ内容で再度更新した場合も `200` です。存在しないIDは新規作成せず `404` を返します。
+不正な入力は `400`、JSON以外のContent-Typeは `415`、DB接続エラーは `503` です。
+AndroidからもHTTPメソッドに `PUT` を指定してください。
+
 ### 削除
 
 ```sh

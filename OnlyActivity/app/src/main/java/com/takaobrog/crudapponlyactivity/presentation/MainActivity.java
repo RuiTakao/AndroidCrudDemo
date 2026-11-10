@@ -117,9 +117,9 @@ public class MainActivity extends AppCompatActivity {
         TextInputLayout textInputLayoutMemo = view.findViewById(R.id.register_memo);
 
         new AlertDialog.Builder(this)
-                .setTitle(getString(R.string.dialog_title))
+                .setTitle(getString(R.string.register_dialog_title))
                 .setView(view)
-                .setPositiveButton(getString(R.string.dialog_button_positive), new DialogInterface.OnClickListener() {
+                .setPositiveButton(getString(R.string.register_dialog_button_positive), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         showLoadingDialog();
@@ -135,7 +135,7 @@ public class MainActivity extends AppCompatActivity {
                         }).start();
                     }
                 })
-                .setNegativeButton(getString(R.string.dialog_button_negative), null)
+                .setNegativeButton(getString(R.string.register_dialog_button_negative), null)
                 .create()
                 .show();
     }

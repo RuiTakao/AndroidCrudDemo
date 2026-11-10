@@ -21,6 +21,7 @@ public class ServerConnection {
     private static final String METHOD_GET = "GET";
     private static final String METHOD_POST = "POST";
     private static final String METHOD_DELETE = "DELETE";
+    private static final String METHOD_PUT = "PUT";
     private static final String HEADER_KEY = "Content-Type";
     private static final String HEADER_VALUE = "application/json; charset=utf-8";
     private static final String CHARSET = "UTF-8";
@@ -119,6 +120,37 @@ public class ServerConnection {
             URL url = new URL(BuildConfig.BASE_URL + "todo/delete/");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod(METHOD_DELETE);
+            connection.setDoInput(true);
+            connection.setDoOutput(true);
+            connection.setRequestProperty(HEADER_KEY, HEADER_VALUE);
+            connection.connect();
+            BufferedWriter writer = new BufferedWriter(
+                    new OutputStreamWriter(connection.getOutputStream(), CHARSET)
+            );
+            Logging.d("DEBUG", "body: " + body);
+            writer.write(body);
+            writer.close();
+            LoggingToResponse(connection.getResponseCode());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void update(int id, String title, String memo) {
+        String body;
+        try {
+            JSONObject json = new JSONObject();
+            json.put("id", id);
+            json.put("title", title);
+            json.put("memo", memo);
+            body = json.toString();
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+        try {
+            URL url = new URL(BuildConfig.BASE_URL + "todo/update/");
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod(METHOD_PUT);
             connection.setDoInput(true);
             connection.setDoOutput(true);
             connection.setRequestProperty(HEADER_KEY, HEADER_VALUE);

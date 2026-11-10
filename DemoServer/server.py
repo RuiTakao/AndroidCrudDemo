@@ -57,19 +57,9 @@ class TodoHandler(BaseHTTPRequestHandler):
         data = self.read_json_object()
         if data is None:
             return
-        title, memo = data.get("title"), data.get("memo")
-        if not isinstance(title, str) or not title.strip() or len(title) > 255:
-            self.send_json(400, {"error": "title must be a non-empty string of at most 255 characters"})
+        if not self.validate_todo_fields(data):
             return
-        if not isinstance(memo, str) or len(memo.encode("utf-8", errors="replace")) > 65535:
-            self.send_json(400, {"error": "memo must be a string of at most 65535 UTF-8 bytes"})
-            return
-        try:
-            title.encode("utf-8")
-            memo.encode("utf-8")
-        except UnicodeEncodeError:
-            self.send_json(400, {"error": "Invalid Unicode text"})
-            return
+        title, memo = data["title"], data["memo"]
         try:
             with connect_db() as db:
                 with db.cursor() as cursor:
@@ -80,6 +70,55 @@ class TodoHandler(BaseHTTPRequestHandler):
             self.send_json(503, {"error": "Database unavailable"})
             return
         self.send_json(201, {"id": todo_id, "title": title, "memo": memo})
+
+    def do_PUT(self):
+        if urlsplit(self.path).path not in ("/todo/update", "/todo/update/"):
+            self.send_json(404, {"error": "Not found"})
+            return
+        data = self.read_json_object()
+        if data is None:
+            return
+        todo_id = data.get("id")
+        if type(todo_id) is not int or not 1 <= todo_id <= 2147483647:
+            self.send_json(400, {"error": "id must be an integer between 1 and 2147483647"})
+            return
+        if not self.validate_todo_fields(data):
+            return
+        title, memo = data["title"], data["memo"]
+        try:
+            with connect_db() as db:
+                with db.cursor() as cursor:
+                    cursor.execute("SELECT id FROM todos WHERE id = %s FOR UPDATE", (todo_id,))
+                    exists = cursor.fetchone() is not None
+                    if exists:
+                        cursor.execute(
+                            "UPDATE todos SET title = %s, memo = %s WHERE id = %s",
+                            (title, memo, todo_id),
+                        )
+                db.commit()
+        except pymysql.MySQLError:
+            self.send_json(503, {"error": "Database unavailable"})
+            return
+        if not exists:
+            self.send_json(404, {"error": "Not found"})
+        else:
+            self.send_json(200, {"id": todo_id, "title": title, "memo": memo})
+
+    def validate_todo_fields(self, data):
+        title, memo = data.get("title"), data.get("memo")
+        if not isinstance(title, str) or not title.strip() or len(title) > 255:
+            self.send_json(400, {"error": "title must be a non-empty string of at most 255 characters"})
+            return False
+        if not isinstance(memo, str) or len(memo.encode("utf-8", errors="replace")) > 65535:
+            self.send_json(400, {"error": "memo must be a string of at most 65535 UTF-8 bytes"})
+            return False
+        try:
+            title.encode("utf-8")
+            memo.encode("utf-8")
+        except UnicodeEncodeError:
+            self.send_json(400, {"error": "Invalid Unicode text"})
+            return False
+        return True
 
     def do_DELETE(self):
         if urlsplit(self.path).path not in ("/todo/delete", "/todo/delete/"):

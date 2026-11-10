@@ -5,8 +5,10 @@ import static com.takaobrog.crudapponlyactivity.presentation.MainActivity.TRANSI
 import static com.takaobrog.crudapponlyactivity.presentation.MainActivity.TRANSITION_TYPE_BACK;
 import static com.takaobrog.crudapponlyactivity.presentation.MainActivity.TRANSITION_TYPE_DELETE;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -18,6 +20,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.android.material.textfield.TextInputLayout;
 import com.takaobrog.crudapponlyactivity.R;
 import com.takaobrog.crudapponlyactivity.connection.ServerConnection;
 import com.takaobrog.crudapponlyactivity.util.Data;
@@ -28,6 +31,10 @@ public class DetailActivity extends AppCompatActivity {
     private static final String TAG = DetailActivity.class.getSimpleName();
     public static final String DATA_ID = "id";
     private int id;
+    private String title;
+    private String memo;
+    private TextView titleView;
+    private TextView memoView;
     private AlertDialog dialog;
     private final ServerConnection conn = new ServerConnection();
     private Button backBtn;
@@ -46,18 +53,13 @@ public class DetailActivity extends AppCompatActivity {
         });
 
         id = getIntent().getIntExtra(DATA_ID, 0);
-        TextView title = findViewById(R.id.detail_title);
-        TextView memo = findViewById(R.id.detail_memo);
+        titleView = findViewById(R.id.detail_title);
+        memoView = findViewById(R.id.detail_memo);
         backBtn = findViewById(R.id.back_btn);
         deleteBtn = findViewById(R.id.delete_btn);
 
         showLoadingDialog();
-        new Thread(() -> {
-            Data data = conn.getData(id);
-            title.post(() -> title.setText(data.getTitle()));
-            memo.post(() -> memo.setText(data.getMemo()));
-            dismissLoadingDialog();
-        }).start();
+        fetchData(this::dismissLoadingDialog);
     }
 
     @Override
@@ -79,6 +81,11 @@ public class DetailActivity extends AppCompatActivity {
         intent.putExtra(TRANSITION_TYPE, TRANSITION_TYPE_BACK);
         setResult(RESULT_OK, intent);
         finish();
+    }
+
+    public void onClickEdit(View view) {
+        Logging.d(TAG, "edit id: " + id);
+        editDialog();
     }
 
     public void onClickDelete(View view) {
@@ -113,5 +120,49 @@ public class DetailActivity extends AppCompatActivity {
     private void buttonSetting() {
         backBtn.setEnabled(false);
         deleteBtn.setEnabled(false);
+    }
+
+    private void editDialog() {
+        LayoutInflater layoutInflater = LayoutInflater.from(this);
+        View view = layoutInflater.inflate(R.layout.edit_dialog, null);
+        TextInputLayout textInputLayoutTitle = view.findViewById(R.id.edit_title);
+        TextInputLayout textInputLayoutMemo = view.findViewById(R.id.edit_memo);
+        textInputLayoutTitle.getEditText().setText(title);
+        textInputLayoutMemo.getEditText().setText(memo);
+
+        new AlertDialog.Builder(this)
+                .setTitle(getString(R.string.edit_dialog_title))
+                .setView(view)
+                .setPositiveButton(getString(R.string.edit_dialog_button_positive), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        showLoadingDialog();
+                        String title;
+                        String memo;
+                        if (textInputLayoutTitle.getEditText() == null) return;
+                        if (textInputLayoutMemo.getEditText() == null) return;
+                        title = textInputLayoutTitle.getEditText().getText().toString();
+                        memo = textInputLayoutMemo.getEditText().getText().toString();
+                        new Thread(() -> {
+                            conn.update(id, title, memo);
+                            fetchData(() -> dismissLoadingDialog());
+                        }).start();
+                    }
+                })
+                .setNegativeButton(getString(R.string.edit_dialog_button_negative), null)
+                .create()
+                .show();
+    }
+
+    private void fetchData(Runnable callback) {
+        Logging.d(TAG, "fetchData");
+        new Thread(() -> {
+            Data data = conn.getData(id);
+            title = data.getTitle();
+            memo = data.getMemo();
+            titleView.post(() -> titleView.setText(title));
+            memoView.post(() -> memoView.setText(memo));
+            if (callback != null) callback.run();
+        }).start();
     }
 }
